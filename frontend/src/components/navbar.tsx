@@ -12,6 +12,7 @@ const LINKS = [
   { href: '/san', label: 'Tìm sân' },
   { href: '/dat-chong', label: 'Đặt chông' },
   { href: '/lich-dat', label: 'Lịch đặt' },
+  { href: '/ghep-keo', label: 'Ghép kèo' },
 ];
 
 export function Navbar() {

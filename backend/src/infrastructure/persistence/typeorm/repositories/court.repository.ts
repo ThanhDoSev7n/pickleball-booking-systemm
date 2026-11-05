@@ -4,7 +4,12 @@ import { Court, CourtCluster } from '../../../../domain/model/court.entity';
 import {
   CourtSearchCriteria,
   ICourtRepository,
+  CreateClusterData,
+  CreateCourtData,
+  UpdateClusterData,
+  UpdateCourtData,
 } from '../../../../domain/port/court.repository.port';
+import { CourtType } from '../../../../domain/value-object/court-type.vo';
 import { CourtClusterSchema } from '../entities/court-cluster.schema';
 import { CourtSchema } from '../entities/court.schema';
 import { toDomainCluster, toDomainCourt } from '../entity-mapper';
@@ -77,6 +82,9 @@ export class TypeOrmCourtRepository implements ICourtRepository {
     if (criteria.city !== undefined) {
       qb.andWhere('cluster.city = :city', { city: criteria.city });
     }
+        if (criteria.ownerId !== undefined) {
+      qb.andWhere('cluster.owner_id = :ownerId', { ownerId: criteria.ownerId });
+    }
     const rows = await qb.orderBy('cluster.cluster_id', 'ASC').getMany();
 
     const clusters: CourtCluster[] = [];
@@ -88,6 +96,56 @@ export class TypeOrmCourtRepository implements ICourtRepository {
       clusters.push(toDomainCluster(row, courts.map(toDomainCourt)));
     }
     return clusters;
+  }
+    async createCluster(data: CreateClusterData): Promise<CourtCluster> {
+    const repo = this.dataSource.getRepository(CourtClusterSchema);
+    const saved = await repo.save(
+      repo.create({
+        name: data.name,
+        address: data.address,
+        city: data.city,
+        description: data.description ?? null,
+        ownerId: data.ownerId,
+      }),
+    );
+    return (await this.findClusterById(saved.clusterId)) as CourtCluster;
+  }
+
+  async updateCluster(clusterId: number, data: UpdateClusterData): Promise<CourtCluster | null> {
+    await this.dataSource.getRepository(CourtClusterSchema).update(clusterId, data);
+    return this.findClusterById(clusterId);
+  }
+
+  async setClusterActive(clusterId: number, isActive: boolean): Promise<void> {
+    await this.dataSource.getRepository(CourtClusterSchema).update(clusterId, { isActive });
+  }
+
+  async createCourt(data: CreateCourtData): Promise<Court> {
+    const repo = this.dataSource.getRepository(CourtSchema);
+    const saved = await repo.save(
+      repo.create({
+        clusterId: data.clusterId,
+        name: data.name,
+        courtType: (data.courtType as CourtType) ?? CourtType.OUTDOOR,
+        surface: data.surface ?? null,
+        openingTime: data.openingTime ?? '06:00',
+        closingTime: data.closingTime ?? '22:00',
+        slotDurationMinutes: data.slotDurationMinutes ?? 60,
+      }),
+    );
+    return (await this.findCourtById(saved.courtId)) as Court;
+  }
+
+  async updateCourt(courtId: number, data: UpdateCourtData): Promise<Court | null> {
+    await this.dataSource.getRepository(CourtSchema).update(courtId, {
+      ...data,
+      courtType: data.courtType as CourtType | undefined,
+    });
+    return this.findCourtById(courtId);
+  }
+
+  async setCourtActive(courtId: number, isActive: boolean): Promise<void> {
+    await this.dataSource.getRepository(CourtSchema).update(courtId, { isActive });
   }
 }
 

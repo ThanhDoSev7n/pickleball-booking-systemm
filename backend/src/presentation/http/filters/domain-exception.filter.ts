@@ -71,6 +71,8 @@ const HTTP_STATUS_BY_DOMAIN_CODE: Readonly<Partial<Record<DomainErrorCode, HttpS
   [DomainErrorCode.BOOKING_NOT_CANCELLABLE]: HttpStatus.CONFLICT,
   [DomainErrorCode.CLUSTER_NOT_APPROVED]: HttpStatus.CONFLICT,
   [DomainErrorCode.DEADLOCK_RETRY_EXHAUSTED]: HttpStatus.CONFLICT,
+  [DomainErrorCode.CLUSTER_NOT_FOUND]: HttpStatus.NOT_FOUND,
+  [DomainErrorCode.COURT_NOT_FOUND]: HttpStatus.NOT_FOUND,
 };
 
 const CODE_BY_HTTP_STATUS: Readonly<Partial<Record<number, string>>> = {

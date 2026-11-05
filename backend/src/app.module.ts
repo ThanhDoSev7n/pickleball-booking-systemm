@@ -7,6 +7,7 @@ import { CourtModule } from './modules/court.module';
 import { IdentityModule } from './modules/identity.module';
 import { SchedulerModule } from './modules/scheduler.module';
 import { PricingModule } from './modules/pricing.module';
+import { MatchmakingModule } from './modules/matchmaking.module';
 
 const DEFAULT_DB_PORT = 3306;
 
@@ -40,6 +41,7 @@ const DEFAULT_DB_PORT = 3306;
     PricingModule,
     BookingModule,
     SchedulerModule,
+    MatchmakingModule,
   ],
 })
 export class AppModule {}

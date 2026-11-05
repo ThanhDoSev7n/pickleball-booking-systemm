@@ -74,6 +74,10 @@ const HTTP_STATUS_BY_DOMAIN_CODE: Readonly<Partial<Record<DomainErrorCode, HttpS
   [DomainErrorCode.CLUSTER_NOT_FOUND]: HttpStatus.NOT_FOUND,
   [DomainErrorCode.COURT_NOT_FOUND]: HttpStatus.NOT_FOUND,
   [DomainErrorCode.PRICING_RULE_NOT_FOUND]: HttpStatus.NOT_FOUND,
+  [DomainErrorCode.MATCH_NOT_FOUND]: HttpStatus.NOT_FOUND,
+  [DomainErrorCode.MATCH_NOT_JOINED]: HttpStatus.NOT_FOUND,
+  [DomainErrorCode.MATCH_FULL]: HttpStatus.CONFLICT,
+  [DomainErrorCode.MATCH_ALREADY_JOINED]: HttpStatus.CONFLICT,
 };
 
 const CODE_BY_HTTP_STATUS: Readonly<Partial<Record<number, string>>> = {

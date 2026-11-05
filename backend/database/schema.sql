@@ -147,6 +147,40 @@ CREATE INDEX idx_booking_slots_status_expires ON booking_slots (status, lock_exp
 CREATE INDEX idx_booking_slots_court_date     ON booking_slots (court_id, slot_date);
 
 SET FOREIGN_KEY_CHECKS = 1;
+-- ghep keo
+CREATE TABLE IF NOT EXISTS match_posts (
+    post_id         INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    creator_id      INT UNSIGNED  NOT NULL,
+    cluster_id      INT UNSIGNED  NOT NULL,
+    play_date       DATE          NOT NULL,
+    start_time      TIME          NOT NULL,
+    end_time        TIME          NOT NULL,
+    skill_level     ENUM('BEGINNER','INTERMEDIATE','ADVANCED') NOT NULL,
+    players_needed  TINYINT UNSIGNED NOT NULL COMMENT 'So nguoi con thieu',
+    description     VARCHAR(255)  NULL,
+    status          ENUM('OPEN','FULL','CANCELLED') NOT NULL DEFAULT 'OPEN',
+    created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (post_id),
+    INDEX idx_match_posts_skill (skill_level, status),
+    CONSTRAINT fk_match_posts_users FOREIGN KEY (creator_id) REFERENCES users (user_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_match_posts_court_clusters FOREIGN KEY (cluster_id) REFERENCES court_clusters (cluster_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT chk_match_posts_hours CHECK (end_time > start_time)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS match_participants (
+    post_id    INT UNSIGNED NOT NULL,
+    user_id    INT UNSIGNED NOT NULL,
+    joined_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (post_id, user_id),
+    CONSTRAINT fk_match_participants_match_posts FOREIGN KEY (post_id) REFERENCES match_posts (post_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_match_participants_users FOREIGN KEY (user_id) REFERENCES users (user_id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+-- quy tac dinh gia
 CREATE TABLE IF NOT EXISTS pricing_rules (
     rule_id         INT UNSIGNED  NOT NULL AUTO_INCREMENT,
     cluster_id      INT UNSIGNED  NOT NULL,

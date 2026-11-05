@@ -1,0 +1,30 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: pickleball-mysql
+    restart: unless-stopped
+    # Isolation để mặc định REPEATABLE READ theo ADR-001 / mục 4.6.2 của tài liệu
+    command:
+      - --innodb-lock-wait-timeout=10
+      # App ghi giờ địa phương (+07) vào cột DATETIME, nên MySQL phải dùng cùng mốc;
+      # nếu không NOW() trong cron releaseExpiredLocks và các báo cáo sẽ lệch 7 giờ.
+      - --default-time-zone=+07:00
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: pickleball_booking
+      MYSQL_USER: pickleball
+      MYSQL_PASSWORD: pickleball123
+    ports:
+      # Host port 3307: MySQL 9.3 local đã chiếm 3306
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot123"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mysql_data:

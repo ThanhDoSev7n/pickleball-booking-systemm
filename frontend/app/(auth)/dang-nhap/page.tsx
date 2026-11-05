@@ -22,8 +22,12 @@ export default function DangNhapPage() {
   // Da dang nhap thi khong can o trang nay nua
   useEffect(() => {
     if (!isAuthenticated) return;
-    router.replace(selectedCount || heldCount ? '/dat-chong' : '/san');
-  }, [isAuthenticated, router, selectedCount, heldCount]);
+    if (user?.role === 'OWNER') {
+      router.replace('/chu-san');
+    } else {
+      router.replace(selectedCount || heldCount ? '/dat-chong' : '/san');
+    }
+  }, [isAuthenticated, router, selectedCount, heldCount, user?.role]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -34,8 +38,13 @@ export default function DangNhapPage() {
     }
     setSubmitting(true);
     try {
-      await signIn(email.trim(), password);
-      router.replace(selectedCount || heldCount ? '/dat-chong' : '/san');
+      const signedInUser = await signIn(email.trim(), password);
+
+      if (signedInUser.role === 'OWNER') {
+        router.replace('/chu-san');
+      } else {
+        router.replace(selectedCount || heldCount ? '/dat-chong' : '/san');
+      }
     } catch (caught) {
       setError(apiErrorMessage(caught));
     } finally {

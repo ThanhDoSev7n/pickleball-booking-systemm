@@ -134,3 +134,6 @@ cron giải phóng giữ chỗ, frontend tra cứu + chọn/khóa slot cho Khác
 Module của các thành viên còn lại — Pricing Engine, Matchmaking, POS/Lễ tân, Reporting/Admin,
 kiểm thử hiệu năng bằng k6/Artillery — chưa nằm trong mã nguồn này.
 `total_amount` vì thế còn `NULL`: giao diện hiển thị "Giá sẽ được tính khi lễ tân xác nhận".
+
+
+Cập nhật database MySql Docker . cd backend . npm run db:setup

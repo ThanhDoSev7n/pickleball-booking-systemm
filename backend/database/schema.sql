@@ -147,3 +147,24 @@ CREATE INDEX idx_booking_slots_status_expires ON booking_slots (status, lock_exp
 CREATE INDEX idx_booking_slots_court_date     ON booking_slots (court_id, slot_date);
 
 SET FOREIGN_KEY_CHECKS = 1;
+CREATE TABLE IF NOT EXISTS pricing_rules (
+    rule_id         INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    cluster_id      INT UNSIGNED  NOT NULL,
+    court_type      ENUM('OUTDOOR','INDOOR','COMPETITION') NULL COMMENT 'NULL = ap dung moi loai san',
+    day_type        ENUM('WEEKDAY','WEEKEND','HOLIDAY') NOT NULL,
+    start_time      TIME          NOT NULL,
+    end_time        TIME          NOT NULL,
+    price_per_hour  DECIMAL(12,2) NOT NULL,
+    created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (rule_id),
+    INDEX idx_pricing_rules_cluster (cluster_id),
+    CONSTRAINT fk_pricing_rules_court_clusters FOREIGN KEY (cluster_id) REFERENCES court_clusters (cluster_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT chk_pricing_rules_hours CHECK (end_time > start_time)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS holidays (
+    holiday_date DATE         NOT NULL,
+    name         VARCHAR(100) NOT NULL,
+    PRIMARY KEY (holiday_date)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;

@@ -21,6 +21,7 @@ export enum DomainErrorCode {
   CLUSTER_NOT_FOUND = 'CLUSTER_NOT_FOUND',
   COURT_NOT_FOUND = 'COURT_NOT_FOUND',
   INVALID_INPUT = 'INVALID_INPUT',
+  PRICING_RULE_NOT_FOUND = 'PRICING_RULE_NOT_FOUND',
 }
 
 export class DomainError extends Error {

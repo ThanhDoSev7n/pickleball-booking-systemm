@@ -6,6 +6,7 @@ import { BookingModule } from './modules/booking.module';
 import { CourtModule } from './modules/court.module';
 import { IdentityModule } from './modules/identity.module';
 import { SchedulerModule } from './modules/scheduler.module';
+import { PricingModule } from './modules/pricing.module';
 
 const DEFAULT_DB_PORT = 3306;
 
@@ -36,6 +37,7 @@ const DEFAULT_DB_PORT = 3306;
     ScheduleModule.forRoot(),
     IdentityModule,
     CourtModule,
+    PricingModule,
     BookingModule,
     SchedulerModule,
   ],

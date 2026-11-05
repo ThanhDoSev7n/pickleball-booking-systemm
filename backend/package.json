@@ -14,7 +14,8 @@
     "test": "jest",
     "load:concurrency": "ts-node -r tsconfig-paths/register scripts/concurrency-probe.ts",
     "lint": "eslint \"src/**/*.ts\"",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:concurrency": "ts-node -r tsconfig-paths/register scripts/confirm-race-test.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",

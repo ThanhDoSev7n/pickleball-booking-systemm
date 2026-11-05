@@ -85,21 +85,25 @@ Cau hinh qua `.env`: `LOCK_TTL_MINUTES`, `LOCK_RELEASE_INTERVAL_SECONDS`, `DEADL
 
 ```bash
 cd backend
-npm test                          # 15 unit test cho SlotLockManager + state machine slot
-npm run load:concurrency -- --vus 200   # 200 request dong thoi tren CUNG 1 slot
+npm test                                # 15 unit test cho SlotLockManager + state machine slot
+npm run load:concurrency -- --vus 100   # N request dong thoi tren CUNG 1 slot (keu P50/P95/P99)
+npm run test:concurrency                # xung dot o buoc confirm + khoa nhieu slot chong nhau
 
 cd ../frontend
-npm run test:e2e                  # 12 buoc E2E tren Chrome that + backend that
+npm run test:e2e                        # 12 buoc E2E tren Chrome that + backend that
 ```
 
-Ket qua mong doi cua load test — day la bang chung chinh cho NFR-02:
+Ket qua do duoc tren may phat trien (MySQL 8.4 Docker, 1 instance NestJS):
 
-```
-Lock thanh cong : 1
-Bi tu choi 409  : 199
-HTTP bat ngo    : 0
-=> dung 1 thanh cong, 0 double-booking
-```
+| Thi nghiem | Ket qua |
+| --- | --- |
+| 100 request dong thoi tren 1 slot | 1 thanh cong, 99 tu choi 409, 0 loi khac · P50 330 ms, **P95 413 ms** |
+| 200 request dong thoi tren 1 slot | 1 thanh cong, 199 tu choi 409, 0 loi khac · P50 596 ms, **P95 795 ms** |
+| 20 user cung `confirm` 1 slot | 1 booking duoc tao, 19 bi tu choi 403/409 |
+| 2 user khoa 2 tap slot chong nhau | 1 don 201, 1 don 409; don thua rollback **toan bo** (khong giu lai slot le) |
+
+NFR-02 (0 double-booking) va NFR-01 (P95 ≤ 2 s @100 users) deu dat.
+`npm run test:concurrency` tu tao tai khoan doc lap nen chay lai duoc nhieu lan.
 
 ## CAI DAT
 

@@ -105,11 +105,10 @@ export class TypeOrmSlotRepository implements ISlotRepository {
       .andWhere('slot.status IN (:...statuses)', {
         statuses: [SlotStatus.AVAILABLE, SlotStatus.LOCKED],
       })
-      // Lazy release (muc 4.7.1): giu cho qua han duoc hien thi nhu khung gio trong.
-      .andWhere(
-        '(slot.lock_expires_at IS NULL OR slot.lock_expires_at > :now OR slot.locked_by IS NULL)',
-        { now },
-      )
+      // Lazy release (muc 4.7.1): KHONG lloc theo lock_expires_at o day.
+      // Slot LOCKED chua han -> toSlotView tra 'HELD' (kem dem nguoc de cho khac biet).
+      // Slot LOCKED qua han -> toSlotView tra 'AVAILABLE' khung do duoc mo lai ngay,
+      // khong can cho cron. Loc theo lock_expires_at o day se loai nham cac slot qua han.
       .orderBy('court.cluster_id', 'ASC')
       .addOrderBy('slot.court_id', 'ASC')
       .addOrderBy('slot.start_time', 'ASC')

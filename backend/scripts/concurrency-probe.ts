@@ -141,13 +141,14 @@ async function main(): Promise<void> {
 
   const started = performance.now();
   const results = await Promise.all(
-    tokens.map((token) =>
-      json(`${args.baseUrl}/api/bookings/lock`, {
+    tokens.map((token) => {
+      const t0 = performance.now();
+      return json(`${args.baseUrl}/api/bookings/lock`, {
         method: 'POST',
         headers: { authorization: `Bearer ${token}` },
         body: JSON.stringify({ slotIds: [slotId] }),
-      }),
-    ),
+      }).then((r) => ({ ...r, latencyMs: performance.now() - t0 }));
+    }),
   );
   const elapsedMs = performance.now() - started;
 
@@ -165,6 +166,10 @@ async function main(): Promise<void> {
 
   console.log('');
   console.log(`  Thoi gian xong 1 dot ${args.vus} request dong thoi : ${elapsedMs.toFixed(0)} ms`);
+  const percentiles = [50, 95, 99].map((p) => `P${p}=${percentile(results.map((r) => r.latencyMs), p).toFixed(0)}ms`);
+  const slowest = Math.max(...results.map((r) => r.latencyMs));
+  console.log(`  Thoi gian phan ho tung request (NFR-01)        : ${percentiles.join(' ')} max=${slowest.toFixed(0)}ms`);
+  console.log(`  Ket luan NFR-01 (P95 <= 2000ms @100 users)      : ${percentile(results.map((r) => r.latencyMs), 95) <= 2000 ? 'DAT' : 'KHONG DAT'}`);
   console.log(`  Lock thanh cong (HTTP 200/201)                 : ${winners.length}`);
   console.log(`  Bi tu choi 409 SLOT_NOT_AVAILABLE              : ${rejected.length}`);
   console.log(`  HTTP bat ngo                                   : ${unexpected.length}`);
@@ -218,3 +223,13 @@ main().catch((error) => {
   console.error('[probe] LOI:', error instanceof Error ? error.message : error);
   process.exitCode = 1;
 });
+
+/** Phan vi theo nearest-rank (P95 la chi tieu NFR-01 trong tai lieu). */
+function percentile(samples: number[], p: number): number {
+  if (samples.length === 0) {
+    return 0;
+  }
+  const sorted = [...samples].sort((a, b) => a - b);
+  const rank = Math.ceil((p / 100) * sorted.length) - 1;
+  return sorted[Math.max(0, Math.min(sorted.length - 1, rank))];
+}

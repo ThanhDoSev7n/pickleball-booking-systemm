@@ -13,6 +13,7 @@ const LINKS = [
   { href: '/dat-chong', label: 'Đặt chông' },
   { href: '/lich-dat', label: 'Lịch đặt' },
   { href: '/ghep-keo', label: 'Ghép kèo' },
+  
 ];
 
 export function Navbar() {
@@ -21,6 +22,10 @@ export function Navbar() {
   const { heldCount, selectedCount } = useBookingCart();
   const [open, setOpen] = useState(false);
   const cartBadge = heldCount + selectedCount;
+    const links =
+    user?.role === 'OWNER' || user?.role === 'ADMIN'
+      ? [...LINKS, { href: '/chu-san', label: 'Quản lý sân' }]
+      : LINKS;
 
   const linkClass = (href: string) =>
     `rounded-lg px-3 py-2 text-sm font-medium transition ${

@@ -12,15 +12,17 @@ import {
   createCourt,
   createPricingRule,
   deletePricingRule,
-  hideCourt,
+  setCourtActive,
   listMyClusters,
   listPricingRules,
+  updateCourt,
   type DayType,
   type OwnerCluster,
   type PricingRule,
 } from '@/lib/api/owner-api';
 import { useAuth } from '@/lib/auth-context';
 import { apiErrorMessage } from '@/lib/error-message';
+import { OwnerDashboard } from '@/components/owner-dashboard';
 
 const inputClass = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
 const btnClass = 'rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50';
@@ -55,18 +57,20 @@ function ChuSanView() {
   }, [reload]);
 
   // Chay mot thao tac, bao ket qua, tai lai du lieu.
-  const run = async (action: () => Promise<unknown>, okText: string) => {
+  const run = async (action: () => Promise<unknown>, okText: string): Promise<boolean> => {
     setMessage(null);
     try {
       await action();
       setMessage({ tone: 'success', text: okText });
       await reload();
+      return true;
     } catch (caught) {
       setMessage({ tone: 'error', text: apiErrorMessage(caught) });
+      return false;
     }
   };
 
-  if (user && user.role !== 'OWNER' && user.role !== 'ADMIN') {
+  if (user && user.role !== 'OWNER') {
     return <AlertBanner tone="error">Chỉ chủ sân mới vào được trang này.</AlertBanner>;
   }
 
@@ -76,7 +80,8 @@ function ChuSanView() {
         <h1 className="text-2xl font-bold text-slate-800 sm:text-3xl">Quản lý sân</h1>
         <p className="mt-1 text-sm text-slate-500">Cụm sân, sân con và bảng giá theo khung giờ.</p>
       </header>
-
+     < OwnerDashboard />
+      <h2 className="pt-2 text-lg font-semibold text-slate-800">Quản lý sân và bảng giá</h2>
       {message ? (
         <AlertBanner tone={message.tone} onDismiss={() => setMessage(null)}>
           {message.text}
@@ -95,9 +100,9 @@ function ChuSanView() {
   );
 }
 
-type Run = (action: () => Promise<unknown>, okText: string) => Promise<void>;
+type Run = (action: () => Promise<unknown>, okText: string) => Promise<boolean>;
 
-function NewClusterForm({ onSubmit }: { onSubmit: (p: { name: string; address: string; city: string }) => Promise<void> }) {
+function NewClusterForm({ onSubmit }: { onSubmit: (p: { name: string; address: string; city: string }) => Promise<unknown> }) {
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
@@ -126,6 +131,9 @@ function NewClusterForm({ onSubmit }: { onSubmit: (p: { name: string; address: s
 function ClusterCard({ cluster, run }: { cluster: OwnerCluster; run: Run }) {
   const [courtName, setCourtName] = useState('');
   const [courtType, setCourtType] = useState('OUTDOOR');
+  const [editingCourtId, setEditingCourtId] = useState<number | null>(null);
+  const [editingCourtName, setEditingCourtName] = useState('');
+  const [editingCourtType, setEditingCourtType] = useState('OUTDOOR');
   const [rules, setRules] = useState<PricingRule[]>([]);
 
   const loadRules = useCallback(async () => {
@@ -141,8 +149,9 @@ function ClusterCard({ cluster, run }: { cluster: OwnerCluster; run: Run }) {
   }, [loadRules]);
 
   const runAndReloadRules: Run = async (action, okText) => {
-    await run(action, okText);
+    const succeeded = await run(action, okText);
     await loadRules();
+    return succeeded;
   };
 
   return (
@@ -159,15 +168,76 @@ function ClusterCard({ cluster, run }: { cluster: OwnerCluster; run: Run }) {
         <ul className="space-y-1 text-sm">
           {cluster.courts.map((court) => (
             <li key={court.courtId} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-              <span className={Boolean(court.isActive) ? '' : 'text-slate-400 line-through'}>
-                {court.name} · {courtTypeLabel(court.courtType)}
-              </span>
-              {Boolean(court.isActive) ? (
-                <button type="button" className="text-red-600 hover:underline" onClick={() => run(() => hideCourt(court.courtId), 'Đã ẩn sân.')}>
-                  Ẩn
-                </button>
+              {editingCourtId === court.courtId ? (
+                <div className="flex flex-1 flex-wrap items-center gap-2">
+                  <input
+                    aria-label="Tên sân"
+                    className={`${inputClass} sm:max-w-56`}
+                    value={editingCourtName}
+                    onChange={(event) => setEditingCourtName(event.target.value)}
+                  />
+                  <select
+                    aria-label="Loại sân"
+                    className={`${inputClass} sm:max-w-56`}
+                    value={editingCourtType}
+                    onChange={(event) => setEditingCourtType(event.target.value)}
+                  >
+                    {COURT_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {courtTypeLabel(type)}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className={btnClass}
+                    disabled={!editingCourtName.trim()}
+                    onClick={async () => {
+                      const saved = await run(
+                        () => updateCourt(court.courtId, { name: editingCourtName.trim(), courtType: editingCourtType }),
+                        'Đã cập nhật thông tin sân.',
+                      );
+                      if (saved) setEditingCourtId(null);
+                    }}
+                  >
+                    Lưu
+                  </button>
+                  <button type="button" className="px-2 py-1 text-slate-600 hover:underline" onClick={() => setEditingCourtId(null)}>
+                    Hủy
+                  </button>
+                </div>
               ) : (
-                <span className="text-xs text-slate-400">Đã ẩn</span>
+                <>
+                  <span className={Boolean(court.isActive) ? '' : 'text-slate-400 line-through'}>
+                    {court.name} · {courtTypeLabel(court.courtType)}
+                    {!Boolean(court.isActive) ? ' · Đã ẩn' : ''}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      className="text-sky-700 hover:underline"
+                      onClick={() => {
+                        setEditingCourtId(court.courtId);
+                        setEditingCourtName(court.name);
+                        setEditingCourtType(court.courtType);
+                      }}
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      type="button"
+                      className={Boolean(court.isActive) ? 'text-red-600 hover:underline' : 'text-emerald-700 hover:underline'}
+                      onClick={() =>
+                        run(
+                          () => setCourtActive(court.courtId, !Boolean(court.isActive)),
+                          Boolean(court.isActive) ? 'Đã ẩn sân.' : 'Đã hiện lại sân.',
+                        )
+                      }
+                    >
+                      {Boolean(court.isActive) ? 'Ẩn' : 'Hiện lại'}
+                    </button>
+                  </div>
+                </>
               )}
             </li>
           ))}
@@ -221,7 +291,7 @@ function ClusterCard({ cluster, run }: { cluster: OwnerCluster; run: Run }) {
 function NewRuleForm({
   onSubmit,
 }: {
-  onSubmit: (p: { courtType?: string; dayType: DayType; startTime: string; endTime: string; pricePerHour: number }) => Promise<void>;
+  onSubmit: (p: { courtType?: string; dayType: DayType; startTime: string; endTime: string; pricePerHour: number }) => Promise<unknown>;
 }) {
   const [dayType, setDayType] = useState<DayType>('WEEKDAY');
   const [courtType, setCourtType] = useState('');

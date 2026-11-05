@@ -9,6 +9,7 @@ import { ROLE_LABELS } from '@/lib/api/auth-api';
 import { useBookingCart } from '@/lib/booking-cart-context';
 
 const LINKS = [
+  { href: '/chu-san', label: 'Dashboard' },
   { href: '/san', label: 'Tìm sân' },
   { href: '/dat-chong', label: 'Đặt chông' },
   { href: '/lich-dat', label: 'Lịch đặt' },
@@ -22,10 +23,8 @@ export function Navbar() {
   const { heldCount, selectedCount } = useBookingCart();
   const [open, setOpen] = useState(false);
   const cartBadge = heldCount + selectedCount;
-    const links =
-    user?.role === 'OWNER' || user?.role === 'ADMIN'
-      ? [...LINKS, { href: '/chu-san', label: 'Quản lý sân' }]
-      : LINKS;
+      const links =
+    user?.role === 'OWNER' ? [...LINKS, { href: '/chu-san', label: 'Dashboard' }] : LINKS;
 
   const linkClass = (href: string) =>
     `rounded-lg px-3 py-2 text-sm font-medium transition ${

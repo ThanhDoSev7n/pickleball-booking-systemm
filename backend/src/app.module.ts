@@ -8,7 +8,7 @@ import { IdentityModule } from './modules/identity.module';
 import { SchedulerModule } from './modules/scheduler.module';
 import { PricingModule } from './modules/pricing.module';
 import { MatchmakingModule } from './modules/matchmaking.module';
-
+import { StatsModule } from './modules/stats.module';
 const DEFAULT_DB_PORT = 3306;
 
 @Module({
@@ -42,6 +42,7 @@ const DEFAULT_DB_PORT = 3306;
     BookingModule,
     SchedulerModule,
     MatchmakingModule,
+    StatsModule,
   ],
 })
 export class AppModule {}

@@ -18,6 +18,6 @@ import { CourtModule } from './court.module';
     ManagePricingUseCase,
     QuotePriceUseCase,
   ],
-  exports: [QuotePriceUseCase],
+  exports: [QuotePriceUseCase, PRICING_REPOSITORY],
 })
 export class PricingModule {}

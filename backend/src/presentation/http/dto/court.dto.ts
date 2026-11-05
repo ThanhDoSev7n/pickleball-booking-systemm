@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsIn, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsBoolean, IsEnum, IsIn, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 import { CourtType } from '../../../domain/value-object/court-type.vo';
 
 const CLOCK_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -106,4 +106,9 @@ export class UpdateCourtDto {
   @Type(() => Number)
   @IsIn([30, 60, 90], { message: 'slotDurationMinutes phai la 30, 60 hoac 90' })
   slotDurationMinutes?: number;
+}
+
+export class SetCourtActiveDto {
+  @IsBoolean()
+  isActive!: boolean;
 }

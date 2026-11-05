@@ -19,6 +19,7 @@ import { Roles } from '../decorators/roles.decorator';
 import {
   CreateClusterDto,
   CreateCourtDto,
+  SetCourtActiveDto,
   UpdateClusterDto,
   UpdateCourtDto,
 } from '../dto/court.dto';
@@ -80,6 +81,16 @@ export class OwnerCourtController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<Court> {
     return this.manageCourts.updateCourt(user, id, dto);
+  }
+
+  @Patch('courts/:id/active')
+  async setCourtActive(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SetCourtActiveDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ success: boolean }> {
+    await this.manageCourts.setCourtActive(user, id, dto.isActive);
+    return { success: true };
   }
 
   @HttpCode(HttpStatus.OK)

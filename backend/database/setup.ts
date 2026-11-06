@@ -156,6 +156,19 @@ async function main(): Promise<void> {
     }
   }
 
+  // Migration additive cho CSDL da co POS invoices truoc khi cot tien san duoc them.
+  const courtAmountColumn = (await dataSource.query(
+    `SELECT COUNT(*) AS column_count
+       FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'pos_invoices' AND COLUMN_NAME = 'court_amount'`,
+    [config.database],
+  )) as { column_count: number }[];
+  if (Number(courtAmountColumn[0]?.column_count ?? 0) === 0) {
+    await dataSource.query(
+      'ALTER TABLE pos_invoices ADD COLUMN court_amount DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER cluster_id',
+    );
+  }
+
   const rows = (await dataSource.query('SHOW TABLES')) as Record<string, string>[];
   const tables = rows.map((row) => Object.values(row)[0]);
   console.log(`[db:setup] DB ${dataSource.options.database} da san sang.`);

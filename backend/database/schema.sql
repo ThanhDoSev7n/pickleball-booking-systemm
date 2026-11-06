@@ -147,6 +147,72 @@ CREATE INDEX idx_booking_slots_status_expires ON booking_slots (status, lock_exp
 CREATE INDEX idx_booking_slots_court_date     ON booking_slots (court_id, slot_date);
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- Thanh vien 3: dich vu tai quay, hoa don POS va nhat ky check-in.
+CREATE TABLE IF NOT EXISTS services (
+    service_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    cluster_id INT UNSIGNED NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    unit VARCHAR(20) NOT NULL,
+    price DECIMAL(12,2) NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (service_id),
+    INDEX idx_services_cluster_active (cluster_id, is_active),
+    CONSTRAINT fk_services_court_clusters FOREIGN KEY (cluster_id) REFERENCES court_clusters (cluster_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT chk_services_price CHECK (price >= 0)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS pos_invoices (
+    invoice_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    invoice_code VARCHAR(32) NOT NULL,
+    booking_id INT UNSIGNED NOT NULL,
+    staff_user_id INT UNSIGNED NOT NULL,
+    cluster_id INT UNSIGNED NOT NULL,
+    court_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    total DECIMAL(12,2) NOT NULL,
+    payment_method ENUM('CASH','CARD','TRANSFER') NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (invoice_id),
+    UNIQUE KEY uk_pos_invoices_invoice_code (invoice_code),
+    INDEX idx_pos_invoices_booking (booking_id),
+    CONSTRAINT fk_pos_invoices_bookings FOREIGN KEY (booking_id) REFERENCES bookings (booking_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_pos_invoices_staff FOREIGN KEY (staff_user_id) REFERENCES users (user_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_pos_invoices_clusters FOREIGN KEY (cluster_id) REFERENCES court_clusters (cluster_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS pos_invoice_items (
+    item_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    invoice_id INT UNSIGNED NOT NULL,
+    service_id INT UNSIGNED NOT NULL,
+    service_name VARCHAR(120) NOT NULL,
+    quantity INT UNSIGNED NOT NULL,
+    unit_price DECIMAL(12,2) NOT NULL,
+    subtotal DECIMAL(12,2) NOT NULL,
+    PRIMARY KEY (item_id),
+    CONSTRAINT fk_pos_invoice_items_invoices FOREIGN KEY (invoice_id) REFERENCES pos_invoices (invoice_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_pos_invoice_items_services FOREIGN KEY (service_id) REFERENCES services (service_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS booking_check_ins (
+    check_in_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    booking_id INT UNSIGNED NOT NULL,
+    staff_user_id INT UNSIGNED NOT NULL,
+    checked_in_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (check_in_id),
+    UNIQUE KEY uk_booking_check_ins_booking (booking_id),
+    CONSTRAINT fk_booking_check_ins_bookings FOREIGN KEY (booking_id) REFERENCES bookings (booking_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_booking_check_ins_staff FOREIGN KEY (staff_user_id) REFERENCES users (user_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- ghep keo
 CREATE TABLE IF NOT EXISTS match_posts (
     post_id         INT UNSIGNED  NOT NULL AUTO_INCREMENT,

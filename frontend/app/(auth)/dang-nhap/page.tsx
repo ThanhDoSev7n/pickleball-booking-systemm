@@ -22,7 +22,9 @@ export default function DangNhapPage() {
   // Da dang nhap thi khong can o trang nay nua
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (user?.role === 'OWNER') {
+    if (user?.role === 'STAFF') {
+      router.replace('/staff');
+    } else if (user?.role === 'OWNER') {
       router.replace('/chu-san');
     } else {
       router.replace(selectedCount || heldCount ? '/dat-chong' : '/san');
@@ -40,7 +42,9 @@ export default function DangNhapPage() {
     try {
       const signedInUser = await signIn(email.trim(), password);
 
-      if (signedInUser.role === 'OWNER') {
+      if (signedInUser.role === 'STAFF') {
+        router.replace('/staff');
+      } else if (signedInUser.role === 'OWNER') {
         router.replace('/chu-san');
       } else {
         router.replace(selectedCount || heldCount ? '/dat-chong' : '/san');

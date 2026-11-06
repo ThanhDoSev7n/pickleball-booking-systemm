@@ -65,4 +65,17 @@ export class TypeOrmUserRepository implements IUserRepository {
     const rows = await this.dataSource.manager.find(UserSchema, { order: { userId: 'ASC' } });
     return rows.map(toDomainUser);
   }
+
+  async setActive(userId: number, isActive: boolean): Promise<User | null> {
+    await this.dataSource.getRepository(UserSchema).update(userId, {
+      isActive,
+      ...(isActive ? {} : { refreshTokenHash: null }),
+    });
+    return this.findById(userId);
+  }
+
+  async setRole(userId: number, role: User['role']): Promise<User | null> {
+    await this.dataSource.getRepository(UserSchema).update(userId, { role });
+    return this.findById(userId);
+  }
 }

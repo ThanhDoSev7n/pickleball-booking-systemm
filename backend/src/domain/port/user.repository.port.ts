@@ -10,4 +10,6 @@ export interface IUserRepository {
   existsByEmail(email: string): Promise<boolean>;
   existsByPhone(phone: string): Promise<boolean>;
   listAll(): Promise<User[]>;
+  setActive(userId: number, isActive: boolean): Promise<User | null>;
+  setRole(userId: number, role: User['role']): Promise<User | null>;
 }

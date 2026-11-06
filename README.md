@@ -129,11 +129,22 @@ commit theo Conventional Commits; nhánh theo GitFlow (`main`, `develop`, `featu
 
 ## Tái phạm vi triển khai
 
-Phạm vi hoàn chỉnh hiện tại thuộc **Thành viên 1** (Identity & RBAC, Core Booking & Slot Locking,
-cron giải phóng giữ chỗ, frontend tra cứu + chọn/khóa slot cho Khách hàng).
-Module của các thành viên còn lại — Pricing Engine, Matchmaking, POS/Lễ tân, Reporting/Admin,
-kiểm thử hiệu năng bằng k6/Artillery — chưa nằm trong mã nguồn này.
-`total_amount` vì thế còn `NULL`: giao diện hiển thị "Giá sẽ được tính khi lễ tân xác nhận".
+Các module đang có gồm Identity/RBAC, Booking/Slot Locking, Pricing, Matchmaking, POS/Lễ tân,
+Reporting cho chủ sân và Admin, duyệt cụm sân/quản lý tài khoản, cùng dashboard vận hành.
+`total_amount` có thể còn `NULL` trước khi thanh toán; báo cáo sẽ ước tính từ bảng giá đã cấu hình.
+
+## Admin, Reporting và DevOps
+
+- Admin UI: `/admin` — duyệt/từ chối cụm sân, quản lý vai trò và trạng thái tài khoản, xem doanh thu và tỷ lệ lấp đầy toàn hệ thống.
+- Owner UI: `/chu-san` — báo cáo theo chủ sân. API: `GET /api/owner/stats?range=today|7days|month`.
+- Admin API: `/api/admin/clusters`, `/api/admin/users`, `GET /api/admin/stats?range=today|7days|month`; mọi endpoint yêu cầu JWT và role ADMIN.
+- IEEE 829-style test design và tiêu chí nghiệm thu: [`docs/qa/IEEE-829-test-cases.md`](docs/qa/IEEE-829-test-cases.md).
+- GitHub Actions ở `.github/workflows/ci-cd.yml` chạy lint, unit test, build; push lên GitHub Packages Container Registry khi verify thành công.
+- Để bật deploy qua SSH trên push nhánh mặc định, đặt GitHub variable `DEPLOY_ENABLED=true`, `DEPLOY_PATH`, `NEXT_PUBLIC_API_URL` và secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`. Tạo `.env` trên host với `GHCR_NAMESPACE`, `GHCR_REPO`, `MYSQL_ROOT_PASSWORD`, `DB_PASSWORD`, `JWT_SECRET`, `FRONTEND_ORIGIN`; deploy Compose dùng MySQL volume bền vững, backend và frontend image theo SHA.
+- Docker build: `docker build -t pickleball-backend ./backend` và `docker build --build-arg NEXT_PUBLIC_API_URL=https://api.example.com/api -t pickleball-frontend ./frontend`.
+- Race test với DB thật: `cd backend; npm run load:concurrency -- --vus 100 --slot auto --confirm`. k6 scenario: `k6 run tests/load/booking-lock.js` với `BASE_URL`, `SLOT_ID`, `VUS` và `PROBE_USERS=email:password,...`.
+
+Dashboard Admin và chủ sân tự làm mới mỗi 30 giây. Occupancy được tính từ tổng giờ booking ở trạng thái CONFIRMED/PAID/CHECKED_IN/COMPLETED chia cho giờ mở cửa của các sân đang hoạt động thuộc cụm đã duyệt trong phạm vi báo cáo. Doanh thu lấy tổng đã lưu, hoặc ước tính theo bảng giá khi booking chưa có `total_amount`.
 
 
 Cập nhật database MySql Docker . cd backend . npm run db:setup

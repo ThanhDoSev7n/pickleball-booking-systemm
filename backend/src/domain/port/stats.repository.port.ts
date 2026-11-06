@@ -19,6 +19,6 @@ export interface OwnerCourtRow {
 }
 
 export interface IStatsRepository {
-  findRevenueBookings(ownerId: number, from: string, to: string): Promise<RevenueBookingRow[]>;
-  findOwnerCourts(ownerId: number): Promise<OwnerCourtRow[]>;
+  findRevenueBookings(ownerId: number | null, from: string, to: string): Promise<RevenueBookingRow[]>;
+  findOwnerCourts(ownerId: number | null): Promise<OwnerCourtRow[]>;
 }

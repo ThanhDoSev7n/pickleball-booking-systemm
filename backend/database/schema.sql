@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS court_clusters (
     description  TEXT          NULL,
     owner_id     INT UNSIGNED  NOT NULL,
     status       ENUM('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING'
-                 COMMENT 'Admin duyet cum san moi dang ky (FR-15)',
+                COMMENT 'Admin duyet cum san moi dang ky (FR-15)',
     is_active    TINYINT(1)    NOT NULL DEFAULT 1,
     created_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS courts (
     cluster_id            INT UNSIGNED  NOT NULL,
     name                  VARCHAR(100)  NOT NULL,
     court_type            ENUM('OUTDOOR','INDOOR','COMPETITION') NOT NULL DEFAULT 'OUTDOOR'
-                          COMMENT 'Loai san - dau vao cua Pricing Engine (Thanh vien 2)',
+                        COMMENT 'Loai san - dau vao cua Pricing Engine (Thanh vien 2)',
     surface               VARCHAR(80)   NULL,
     opening_time          TIME          NOT NULL DEFAULT '06:00',
     closing_time          TIME          NOT NULL DEFAULT '22:00',

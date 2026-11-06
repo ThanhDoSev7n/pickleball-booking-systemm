@@ -20,7 +20,8 @@ export default function StaffPortalPage() {
   const [clusterId, setClusterId] = useState('');
   const [courtOptions, setCourtOptions] = useState<CourtAvailability[]>([]);
   const [courtId, setCourtId] = useState('');
-  const [walkInDate, setWalkInDate] = useState(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10));
+  const [today, setToday] = useState('');
+  const [walkInDate, setWalkInDate] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [walkInCustomer, setWalkInCustomer] = useState<CounterCustomer | null>(null);
   const [selectedSlots, setSelectedSlots] = useState<number[]>([]);
@@ -35,6 +36,16 @@ export default function StaffPortalPage() {
   const [cameraOn, setCameraOn] = useState(false);
   const scannerRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const now = new Date();
+      const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+      setToday(localDate);
+      setWalkInDate(localDate);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const refresh = useCallback(async () => {
     const [bookingResult, serviceResult, clusterResult] = await Promise.allSettled([listCounterBookings(), listCounterServices(), listCounterClusters()]);
     const failures: string[] = [];
@@ -48,7 +59,11 @@ export default function StaffPortalPage() {
     } else failures.push('cụm sân');
     setSyncWarning(failures.length ? `Chưa tải được ${failures.join(', ')}. Kiểm tra backend và cập nhật database nếu bảng mới chưa được tạo.` : '');
   }, []);
-  useEffect(() => { if (status === 'authenticated' && isStaffOrOwner) void refresh(); }, [status, isStaffOrOwner, refresh]);
+  useEffect(() => {
+    if (status !== 'authenticated' || !isStaffOrOwner) return;
+    const timer = window.setTimeout(() => void refresh(), 0);
+    return () => window.clearTimeout(timer);
+  }, [status, isStaffOrOwner, refresh]);
   useEffect(() => {
     if (status !== 'authenticated' || !isStaffOrOwner) return;
     const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void refresh(); }, 15_000);
@@ -58,7 +73,10 @@ export default function StaffPortalPage() {
   }, [status, isStaffOrOwner, refresh]);
 
   useEffect(() => {
-    if (!clusterId || !walkInDate) { setCourtOptions([]); return; }
+    if (!clusterId || !walkInDate) {
+      const timer = window.setTimeout(() => setCourtOptions([]), 0);
+      return () => window.clearTimeout(timer);
+    }
     let cancelled = false;
     void fetchAvailability({ date: walkInDate, clusterId: Number(clusterId) }).then((result) => {
       if (cancelled) return;
@@ -69,7 +87,10 @@ export default function StaffPortalPage() {
     return () => { cancelled = true; };
   }, [clusterId, walkInDate]);
 
-  useEffect(() => { setSelectedSlots([]); }, [courtId]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSelectedSlots([]), 0);
+    return () => window.clearTimeout(timer);
+  }, [courtId]);
   useEffect(() => { if (invoice) document.getElementById('print-invoice')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [invoice]);
 
   const submitCheckIn = useCallback(async (code: string) => {
@@ -159,7 +180,7 @@ export default function StaffPortalPage() {
         <h2 className="text-xl font-bold">Đặt sân walk-in</h2><p className="mt-1 text-sm text-slate-500">Tìm khách bằng số điện thoại, sau đó chọn sân và các khung giờ còn trống.</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]"><label className="text-sm">Số điện thoại khách<input value={customerPhone} onChange={(e) => { setCustomerPhone(e.target.value); setWalkInCustomer(null); }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void run(async () => setWalkInCustomer(await findCounterCustomer(customerPhone))); } }} className="mt-1 w-full rounded-lg border px-3 py-2" inputMode="tel" placeholder="Ví dụ: 0912 345 678"/></label><button disabled={busy || !customerPhone.trim()} onClick={() => void run(async () => { setWalkInCustomer(await findCounterCustomer(customerPhone)); })} className="self-end rounded-lg border px-4 py-2 font-medium disabled:opacity-50">Tìm khách</button></div>
         {walkInCustomer && <div className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900">Đã chọn: <b>{walkInCustomer.fullName}</b> · {walkInCustomer.phoneNumber}</div>}
-        <div className="mt-4 grid gap-3 sm:grid-cols-3"><label className="text-sm">Cụm sân<select value={clusterId} onChange={(e) => { setClusterId(e.target.value); setCourtId(''); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2"><option value="">Chọn cụm sân</option>{clusters.map((cluster) => <option key={cluster.clusterId} value={cluster.clusterId}>{cluster.name} · {cluster.city}</option>)}</select></label><label className="text-sm">Ngày chơi<input type="date" min={new Date().toISOString().slice(0, 10)} value={walkInDate} onChange={(e) => setWalkInDate(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2"/></label><label className="text-sm">Sân<select value={courtId} onChange={(e) => setCourtId(e.target.value)} className="mt-1 w-full rounded-lg border bg-white px-3 py-2"><option value="">Chọn sân</option>{courtOptions.map((court) => <option key={court.courtId} value={court.courtId}>{court.courtName}</option>)}</select></label></div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3"><label className="text-sm">Cụm sân<select value={clusterId} onChange={(e) => { setClusterId(e.target.value); setCourtId(''); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2"><option value="">Chọn cụm sân</option>{clusters.map((cluster) => <option key={cluster.clusterId} value={cluster.clusterId}>{cluster.name} · {cluster.city}</option>)}</select></label><label className="text-sm">Ngày chơi<input type="date" min={today} value={walkInDate} onChange={(e) => setWalkInDate(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2"/></label><label className="text-sm">Sân<select value={courtId} onChange={(e) => setCourtId(e.target.value)} className="mt-1 w-full rounded-lg border bg-white px-3 py-2"><option value="">Chọn sân</option>{courtOptions.map((court) => <option key={court.courtId} value={court.courtId}>{court.courtName}</option>)}</select></label></div>
         <div className="mt-4"><h3 className="text-sm font-semibold">Khung giờ còn trống <span className="font-normal text-slate-500">(có thể chọn nhiều khung liên tiếp)</span></h3><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">{(courtOptions.find((court) => String(court.courtId) === courtId)?.slots ?? []).filter((slot) => slot.availability === 'AVAILABLE').map((slot: SlotView) => { const selected = selectedSlots.includes(slot.slotId); return <button type="button" key={slot.slotId} onClick={() => setSelectedSlots((current) => selected ? current.filter((id) => id !== slot.slotId) : [...current, slot.slotId])} className={`rounded-lg border px-3 py-2 text-sm font-medium ${selected ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-200 hover:border-brand-500'}`}>{new Date(slot.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}–{new Date(slot.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</button>; })}</div>{courtId && !(courtOptions.find((court) => String(court.courtId) === courtId)?.slots.some((slot) => slot.availability === 'AVAILABLE')) && <p className="mt-2 text-sm text-slate-500">Ngày này không còn khung giờ trống ở sân đã chọn.</p>}</div>
         {selectedSlots.length > 0 && <p className="mt-3 text-sm text-slate-600">Đã chọn {selectedSlots.length} khung giờ.</p>}
         <button disabled={busy || !walkInCustomer || !selectedSlots.length} onClick={() => void run(async () => { const result = await createWalkIn({ customerUserId: walkInCustomer!.userId, slotIds: selectedSlots }); setNotice(`Đã tạo booking ${result.bookingCode} cho ${walkInCustomer!.fullName}`); setBookingId(String(result.bookingId)); setSelectedSlots([]); setWalkInCustomer(null); setCustomerPhone(''); await refresh(); })} className="mt-4 rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-50">Tạo booking tại quầy</button>

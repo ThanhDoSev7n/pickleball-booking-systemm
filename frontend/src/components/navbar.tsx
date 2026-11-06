@@ -27,7 +27,9 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const cartBadge = heldCount + selectedCount;
   const links =
-    user?.role === "STAFF"
+    user?.role === "ADMIN"
+      ? [{ href: "/admin", label: "Admin Dashboard" }, ...LINKS.filter((link) => link.href !== "/chu-san"), { href: "/staff", label: "Lễ tân / POS" }]
+      : user?.role === "STAFF"
       ? [{ href: "/staff", label: "Lễ tân / POS" }]
       : user?.role === "OWNER"
         ? [

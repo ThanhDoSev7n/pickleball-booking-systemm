@@ -6,11 +6,12 @@ import { CourtClusterSchema } from '../infrastructure/persistence/typeorm/entiti
 import { CourtSchema } from '../infrastructure/persistence/typeorm/entities/court.schema';
 import { TypeOrmCourtRepository } from '../infrastructure/persistence/typeorm/repositories/court.repository';
 import { OwnerCourtController } from '../presentation/http/controllers/owner-court.controller';
+import { AdminClusterController } from '../presentation/http/controllers/admin-cluster.controller';
 
 /** Reference data san/cum san + API quan ly cho chu san (Thanh vien 2). */
 @Module({
   imports: [TypeOrmModule.forFeature([CourtSchema, CourtClusterSchema])],
-  controllers: [OwnerCourtController],
+  controllers: [OwnerCourtController, AdminClusterController],
   providers: [
     { provide: COURT_REPOSITORY, useClass: TypeOrmCourtRepository },
     ManageCourtsUseCase,

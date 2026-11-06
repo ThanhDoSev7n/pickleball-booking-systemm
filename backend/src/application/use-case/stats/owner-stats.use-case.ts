@@ -47,7 +47,7 @@ export class OwnerStatsUseCase {
     @Inject(PRICING_REPOSITORY) private readonly pricing: IPricingRepository,
   ) {}
 
-  async execute(ownerId: number, range: StatsRange): Promise<OwnerStats> {
+  async execute(ownerId: number | null, range: StatsRange): Promise<OwnerStats> {
     const today = new Date();
     const fromDate =
       range === 'today'

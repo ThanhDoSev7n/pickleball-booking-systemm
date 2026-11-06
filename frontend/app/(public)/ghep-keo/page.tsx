@@ -198,17 +198,22 @@ function CreateForm({ onDone, onError }: { onDone: () => Promise<void>; onError:
 
   // Lay danh sach cum san tu API tra cuu san (cong khai).
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    setPlayDate(today);
-    fetchAvailability({ date: today })
-      .then((result) => {
-        const map = new Map<number, string>();
-        result.courts.forEach((c) => map.set(c.clusterId, c.clusterName));
-        const list = Array.from(map, ([id, name]) => ({ id, name }));
-        setClusters(list);
-        if (list.length > 0) setClusterId(list[0].id);
-      })
-      .catch(() => setClusters([]));
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      const today = new Date().toISOString().slice(0, 10);
+      setPlayDate(today);
+      fetchAvailability({ date: today })
+        .then((result) => {
+          if (cancelled) return;
+          const map = new Map<number, string>();
+          result.courts.forEach((c) => map.set(c.clusterId, c.clusterName));
+          const list = Array.from(map, ([id, name]) => ({ id, name }));
+          setClusters(list);
+          if (list.length > 0) setClusterId(list[0].id);
+        })
+        .catch(() => { if (!cancelled) setClusters([]); });
+    }, 0);
+    return () => { cancelled = true; window.clearTimeout(timer); };
   }, []);
 
   const submit = async () => {

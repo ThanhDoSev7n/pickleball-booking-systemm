@@ -55,6 +55,7 @@ export interface ICourtRepository {
   createCluster(data: CreateClusterData): Promise<CourtCluster>;
   updateCluster(clusterId: number, data: UpdateClusterData): Promise<CourtCluster | null>;
   setClusterActive(clusterId: number, isActive: boolean): Promise<void>;
+  setClusterStatus(clusterId: number, status: 'APPROVED' | 'REJECTED'): Promise<CourtCluster | null>;
   createCourt(data: CreateCourtData): Promise<Court>;
   updateCourt(courtId: number, data: UpdateCourtData): Promise<Court | null>;
   setCourtActive(courtId: number, isActive: boolean): Promise<void>;

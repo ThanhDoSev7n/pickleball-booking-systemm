@@ -22,20 +22,26 @@ export function OwnerDashboard() {
 
   useEffect(() => {
     let ignored = false;
-    setLoading(true);
-    setError(null);
-    fetchOwnerStats(range)
-      .then((data) => {
-        if (!ignored) setStats(data);
-      })
-      .catch((caught) => {
-        if (!ignored) setError(apiErrorMessage(caught));
-      })
-      .finally(() => {
-        if (!ignored) setLoading(false);
-      });
+    const refresh = () => {
+      setLoading(true);
+      setError(null);
+      fetchOwnerStats(range)
+        .then((data) => {
+          if (!ignored) setStats(data);
+        })
+        .catch((caught) => {
+          if (!ignored) setError(apiErrorMessage(caught));
+        })
+        .finally(() => {
+          if (!ignored) setLoading(false);
+        });
+    };
+    const timer = window.setTimeout(refresh, 0);
+    const interval = window.setInterval(refresh, 30_000);
     return () => {
       ignored = true;
+      window.clearTimeout(timer);
+      window.clearInterval(interval);
     };
   }, [range]);
 

@@ -53,7 +53,8 @@ function ChuSanView() {
   }, []);
 
   useEffect(() => {
-    void reload();
+    const timer = window.setTimeout(() => void reload(), 0);
+    return () => window.clearTimeout(timer);
   }, [reload]);
 
   // Chay mot thao tac, bao ket qua, tai lai du lieu.
@@ -80,7 +81,7 @@ function ChuSanView() {
         <h1 className="text-2xl font-bold text-slate-800 sm:text-3xl">Quản lý sân</h1>
         <p className="mt-1 text-sm text-slate-500">Cụm sân, sân con và bảng giá theo khung giờ.</p>
       </header>
-     < OwnerDashboard />
+    < OwnerDashboard />
       <h2 className="pt-2 text-lg font-semibold text-slate-800">Quản lý sân và bảng giá</h2>
       {message ? (
         <AlertBanner tone={message.tone} onDismiss={() => setMessage(null)}>
@@ -145,7 +146,8 @@ function ClusterCard({ cluster, run }: { cluster: OwnerCluster; run: Run }) {
   }, [cluster.clusterId]);
 
   useEffect(() => {
-    void loadRules();
+    const timer = window.setTimeout(() => void loadRules(), 0);
+    return () => window.clearTimeout(timer);
   }, [loadRules]);
 
   const runAndReloadRules: Run = async (action, okText) => {

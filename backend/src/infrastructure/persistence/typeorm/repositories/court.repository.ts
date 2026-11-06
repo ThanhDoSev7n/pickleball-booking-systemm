@@ -9,7 +9,7 @@ import {
   UpdateClusterData,
   UpdateCourtData,
 } from '../../../../domain/port/court.repository.port';
-import { CourtType } from '../../../../domain/value-object/court-type.vo';
+import { ClusterStatus, CourtType } from '../../../../domain/value-object/court-type.vo';
 import { CourtClusterSchema } from '../entities/court-cluster.schema';
 import { CourtSchema } from '../entities/court.schema';
 import { toDomainCluster, toDomainCourt } from '../entity-mapper';
@@ -118,6 +118,11 @@ export class TypeOrmCourtRepository implements ICourtRepository {
 
   async setClusterActive(clusterId: number, isActive: boolean): Promise<void> {
     await this.dataSource.getRepository(CourtClusterSchema).update(clusterId, { isActive });
+  }
+
+    async setClusterStatus(clusterId: number, status: 'APPROVED' | 'REJECTED'): Promise<CourtCluster | null> {
+    await this.dataSource.getRepository(CourtClusterSchema).update(clusterId, { status: status as ClusterStatus });
+    return this.findClusterById(clusterId);
   }
 
   async createCourt(data: CreateCourtData): Promise<Court> {

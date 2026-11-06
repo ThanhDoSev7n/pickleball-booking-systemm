@@ -133,18 +133,53 @@ Các module đang có gồm Identity/RBAC, Booking/Slot Locking, Pricing, Matchm
 Reporting cho chủ sân và Admin, duyệt cụm sân/quản lý tài khoản, cùng dashboard vận hành.
 `total_amount` có thể còn `NULL` trước khi thanh toán; báo cáo sẽ ước tính từ bảng giá đã cấu hình.
 
-## Admin, Reporting và DevOps
 
-- Admin UI: `/admin` — duyệt/từ chối cụm sân, quản lý vai trò và trạng thái tài khoản, xem doanh thu và tỷ lệ lấp đầy toàn hệ thống.
-- Owner UI: `/chu-san` — báo cáo theo chủ sân. API: `GET /api/owner/stats?range=today|7days|month`.
-- Admin API: `/api/admin/clusters`, `/api/admin/users`, `GET /api/admin/stats?range=today|7days|month`; mọi endpoint yêu cầu JWT và role ADMIN.
-- IEEE 829-style test design và tiêu chí nghiệm thu: [`docs/qa/IEEE-829-test-cases.md`](docs/qa/IEEE-829-test-cases.md).
-- GitHub Actions ở `.github/workflows/ci-cd.yml` chạy lint, unit test, build; push lên GitHub Packages Container Registry khi verify thành công.
-- Để bật deploy qua SSH trên push nhánh mặc định, đặt GitHub variable `DEPLOY_ENABLED=true`, `DEPLOY_PATH`, `NEXT_PUBLIC_API_URL` và secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`. Tạo `.env` trên host với `GHCR_NAMESPACE`, `GHCR_REPO`, `MYSQL_ROOT_PASSWORD`, `DB_PASSWORD`, `JWT_SECRET`, `FRONTEND_ORIGIN`; deploy Compose dùng MySQL volume bền vững, backend và frontend image theo SHA.
-- Docker build: `docker build -t pickleball-backend ./backend` và `docker build --build-arg NEXT_PUBLIC_API_URL=https://api.example.com/api -t pickleball-frontend ./frontend`.
-- Race test với DB thật: `cd backend; npm run load:concurrency -- --vus 100 --slot auto --confirm`. k6 scenario: `k6 run tests/load/booking-lock.js` với `BASE_URL`, `SLOT_ID`, `VUS` và `PROBE_USERS=email:password,...`.
+# Admin, Reporting & DevOps
 
-Dashboard Admin và chủ sân tự làm mới mỗi 30 giây. Occupancy được tính từ tổng giờ booking ở trạng thái CONFIRMED/PAID/CHECKED_IN/COMPLETED chia cho giờ mở cửa của các sân đang hoạt động thuộc cụm đã duyệt trong phạm vi báo cáo. Doanh thu lấy tổng đã lưu, hoặc ước tính theo bảng giá khi booking chưa có `total_amount`.
+Phần Quản trị hệ thống, Báo cáo, CI/CD và QA của Pickleball Booking System.
 
+## Chức năng
 
+| Thành phần | Mô tả |
+| --- | --- |
+| Admin | `/admin` — duyệt cụm sân, quản lý tài khoản và vai trò |
+| Reporting | Doanh thu, số booking, giờ thuê và tỷ lệ lấp đầy |
+| Owner dashboard | `/chu-san` — báo cáo theo các cụm sân của chủ sân |
+| CI/CD | GitHub Actions kiểm tra, build và publish Docker image lên GHCR |
+| QA | Test cases theo phong cách IEEE 829 và kiểm thử tranh chấp booking |
+
+## API
+
+Các API Admin yêu cầu JWT với role `ADMIN`.
+
+| Method | Endpoint | Mục đích |
+| --- | --- | --- |
+| `GET` | `/api/admin/users` | Danh sách tài khoản |
+| `POST` | `/api/admin/users` | Tạo tài khoản và gán role |
+| `PATCH` | `/api/admin/users/:id/active` | Khóa/mở tài khoản |
+| `PATCH` | `/api/admin/users/:id/role` | Đổi role tài khoản |
+| `GET` | `/api/admin/clusters` | Danh sách cụm sân |
+| `PATCH` | `/api/admin/clusters/:id/decision` | Duyệt hoặc từ chối cụm sân |
+| `GET` | `/api/admin/stats?range=today\|7days\|month` | Báo cáo toàn hệ thống |
+| `GET` | `/api/owner/stats?range=today\|7days\|month` | Báo cáo chủ sân |
+
+Dashboard tự làm mới mỗi 30 giây. Tỷ lệ lấp đầy = giờ booking hợp lệ / giờ mở cửa của sân đang hoạt động thuộc cụm đã duyệt. Booking chưa có `total_amount` được tính theo bảng giá.
+
+## Kiểm thử
+
+```bash
+cd backend
+npm test
+npm run load:concurrency -- --vus 100 --slot auto --confirm
+```
+
+k6 scenario: [`backend/tests/load/booking-lock.js`](../../backend/tests/load/booking-lock.js). IEEE 829 test design: [`docs/qa/IEEE-829-test-cases.md`](../qa/IEEE-829-test-cases.md).
+
+## CI/CD và triển khai
+
+- Workflow: [`.github/workflows/ci-cd.yml`](../../.github/workflows/ci-cd.yml).
+- Dockerfiles: `backend/Dockerfile`, `frontend/Dockerfile`.
+- Compose production: [`docker-compose.production.yml`](../../docker-compose.production.yml).
+- Deploy SSH cần GitHub variable `DEPLOY_ENABLED=true`, `DEPLOY_PATH`, `NEXT_PUBLIC_API_URL` và secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`.
+- Máy deploy cần `.env` riêng gồm `GHCR_NAMESPACE`, `GHCR_REPO`, `MYSQL_ROOT_PASSWORD`, `DB_PASSWORD`, `JWT_SECRET`, `FRONTEND_ORIGIN`. Không commit secrets vào Git.
 Cập nhật database MySql Docker . cd backend . npm run db:setup

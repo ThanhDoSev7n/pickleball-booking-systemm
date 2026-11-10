@@ -5,7 +5,18 @@ function toMinutes(time: string): number {
   return Number(h) * 60 + Number(m);
 }
 
-/** Chia thoi gian thanh tung khung 30 phut, moi khung tim bang gia phu hop roi cong lai. */
+// Rule cu the nhat thang: khop loai san > cua so gio hep > gia cao > ruleId nho (deterministic, tranh rule nen che rule cao diem).
+function compareSpecificity(a: PricingRule, b: PricingRule): number {
+  const typeRank = Number(b.courtType !== null) - Number(a.courtType !== null);
+  if (typeRank !== 0) return typeRank;
+  const widthA = toMinutes(a.endTime) - toMinutes(a.startTime);
+  const widthB = toMinutes(b.endTime) - toMinutes(b.startTime);
+  if (widthA !== widthB) return widthA - widthB;
+  if (a.pricePerHour !== b.pricePerHour) return b.pricePerHour - a.pricePerHour;
+  return a.ruleId - b.ruleId;
+}
+
+/** Chia thoi gian thanh tung khung 30 phut, moi khung chon rule cu the nhat roi cong lai. */
 export function calculatePrice(
   rules: PricingRule[],
   dayType: DayType,
@@ -13,10 +24,9 @@ export function calculatePrice(
   startTime: string,
   endTime: string,
 ): number | null {
-  // Rule rieng cho loai san duoc uu tien truoc rule ap dung moi loai san.
   const candidates = rules
     .filter((r) => r.dayType === dayType && (r.courtType === null || r.courtType === courtType))
-    .sort((a, b) => Number(b.courtType !== null) - Number(a.courtType !== null));
+    .sort(compareSpecificity);
 
   let total = 0;
   for (let t = toMinutes(startTime); t < toMinutes(endTime); t += 30) {

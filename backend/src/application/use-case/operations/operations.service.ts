@@ -185,16 +185,37 @@ export class OperationsService {
       if (requestedItems.some((item) => !Number.isInteger(item.quantity) || item.quantity < 1)) throw new BadRequestException('Số lượng dịch vụ phải từ 1');
       const catalog = await manager.find(ServiceSchema, { where: { serviceId: In(ids), clusterId: booking.clusterId, isActive: true } });
       if (catalog.length !== ids.length) throw new BadRequestException('Có dịch vụ không hoạt động hoặc không thuộc cụm sân của booking');
-      const courtPrice = booking.totalAmount === null || Number(booking.totalAmount) <= 0
-        ? await this.quoteCourtPrice(booking.courtId, booking.startTime, booking.endTime)
-        : Number(booking.totalAmount);
+      let courtPrice = 0;
+      let courtPriceUnknown = false;
+      let priceWarning: string | undefined;
+      if (booking.totalAmount !== null && Number(booking.totalAmount) > 0) {
+        courtPrice = Number(booking.totalAmount);
+      } else {
+        try {
+          courtPrice = await this.quoteCourtPrice(booking.courtId, booking.startTime, booking.endTime);
+        } catch (error) {
+          // Chua co bang gia phu khung gio: van cho lap hoa don dich vu (dong bo checkIn), tien sân = 0 + canh bao.
+          if (error instanceof DomainError && error.code === DomainErrorCode.INVALID_INPUT) {
+            courtPriceUnknown = true;
+            priceWarning = 'Chưa thể tính tiền sân vì cụm sân chưa cấu hình bảng giá; hóa đơn chỉ thu dịch vụ (nếu có).';
+          } else {
+            throw error;
+          }
+        }
+      }
       const collected = await manager.createQueryBuilder(PosInvoiceSchema, 'invoice')
         .select('COALESCE(SUM(invoice.court_amount), 0)', 'courtAmount')
         .where('invoice.booking_id = :bookingId', { bookingId: booking.bookingId })
         .getRawOne<{ courtAmount: string }>();
       const courtAlreadyPaid = booking.status === BookingStatus.PAID || Number(collected?.courtAmount ?? 0) > 0;
-      const courtAmount = courtAlreadyPaid ? 0 : courtPrice;
-      if (courtAmount <= 0 && requestedItems.length === 0) throw new ConflictException('Tiền sân đã được thanh toán; hãy chọn dịch vụ nếu cần lập thêm hóa đơn.');
+      const courtAmount = courtAlreadyPaid || courtPriceUnknown ? 0 : courtPrice;
+      if (courtAmount <= 0 && requestedItems.length === 0) {
+        throw new ConflictException(
+          courtPriceUnknown
+            ? 'Chưa thể tính tiền sân vì cụm sân chưa cấu hình bảng giá. Hãy cấu hình bảng giá hoặc chọn dịch vụ để lập hóa đơn.'
+            : 'Tiền sân đã được thanh toán; hãy chọn dịch vụ nếu cần lập thêm hóa đơn.',
+        );
+      }
       const invoice = await manager.save(PosInvoiceSchema, manager.create(PosInvoiceSchema, { invoiceCode: `POS-${randomUUID().slice(0, 12).toUpperCase()}`, bookingId: booking.bookingId, staffUserId: user.userId, clusterId: booking.clusterId, courtAmount: courtAmount.toFixed(2), total: '0', paymentMethod: input.paymentMethod }));
       let total = courtAmount;
       const lines: PosInvoiceItemSchema[] = [];
@@ -208,10 +229,13 @@ export class OperationsService {
       await manager.save(PosInvoiceItemSchema, lines);
       invoice.total = total.toFixed(2);
       await manager.save(PosInvoiceSchema, invoice);
-      if (booking.status === BookingStatus.CONFIRMED) booking.status = BookingStatus.PAID;
-      booking.totalAmount = courtPrice.toFixed(2);
-      await manager.save(BookingSchema, booking);
-      return { ...invoice, items: lines };
+      // Chi chot tien sân + PAID khi da biet gia; giu nguyen booking de lan sau (sau khi cau hinh gia) thu duoc tien sân.
+      if (!courtPriceUnknown) {
+        if (booking.status === BookingStatus.CONFIRMED) booking.status = BookingStatus.PAID;
+        booking.totalAmount = courtPrice.toFixed(2);
+        await manager.save(BookingSchema, booking);
+      }
+      return { ...invoice, items: lines, priceWarning };
     });
   }
 

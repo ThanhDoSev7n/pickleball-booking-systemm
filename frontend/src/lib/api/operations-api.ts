@@ -1,7 +1,7 @@
 import { apiClient } from './client';
 
 export interface CounterService { serviceId: number; clusterId: number; name: string; unit: string; price: string; }
-export interface CounterInvoice { invoiceId: number; invoiceCode: string; bookingId: number; courtAmount: string; total: string; paymentMethod: string; items: { serviceName: string; quantity: number; unitPrice: string; subtotal: string }[]; }
+export interface CounterInvoice { invoiceId: number; invoiceCode: string; bookingId: number; courtAmount: string; total: string; paymentMethod: string; items: { serviceName: string; quantity: number; unitPrice: string; subtotal: string }[]; priceWarning?: string; }
 export interface CounterBooking { bookingId: number; bookingCode: string; clusterId: number; startTime: string; endTime: string; status: string; totalAmount?: number | null; }
 export interface CounterCluster { clusterId: number; name: string; address: string; city: string; }
 export interface CounterCustomer { userId: number; fullName: string; phoneNumber: string; }

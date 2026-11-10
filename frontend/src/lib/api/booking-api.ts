@@ -55,7 +55,6 @@ export interface BookingListResult {
 export interface ConfirmPayload {
   slotIds: number[];
   note?: string;
-  expectedTotalAmount?: number;
 }
 
 export const BOOKING_STATUS_LABELS: Record<string, string> = {

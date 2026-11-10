@@ -62,7 +62,6 @@ export class BookingController {
       slotIds: dto.slotIds,
       userId: user.userId,
       note: dto.note,
-      expectedTotalAmount: dto.expectedTotalAmount,
     });
   }
 

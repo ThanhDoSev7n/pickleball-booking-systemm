@@ -7,11 +7,13 @@ import {
   NotFoundDomainError,
 } from '../../../domain/error/domain.error';
 import { Booking } from '../../../domain/model/booking.entity';
+import { toDateString } from '../../../domain/model/booking-slot.entity';
 import { BOOKING_REPOSITORY, IBookingRepository } from '../../../domain/port/booking.repository.port';
 import { COURT_REPOSITORY, ICourtRepository } from '../../../domain/port/court.repository.port';
 import { SLOT_REPOSITORY, ISlotRepository } from '../../../domain/port/slot.repository.port';
 import { TRANSACTION_MANAGER, ITransactionManager } from '../../../domain/port/transaction.port';
 import { SLOT_LOCK_MANAGER, SlotLockManager } from '../../../domain/service/slot-lock.manager';
+import { QuotePriceUseCase } from '../pricing/pricing.use-case';
 import { toBookingView, BookingView } from '../../serialization/booking-view';
 
 const CODE_PREFIX = 'PKL';
@@ -26,7 +28,7 @@ export interface ConfirmBookingInput {
   slotIds: number[];
   userId: number;
   note?: string | null;
-  /** Gia tu Pricing Engine (Thanh vien 2); null khi module chua keo gia. */
+  /** Gia server da tinh san (vd walkIn); client khong duoc gui. Bo trong thi confirm tu quote. */
   expectedTotalAmount?: number | null;
 }
 
@@ -46,6 +48,7 @@ export class ConfirmBookingUseCase {
     @Inject(COURT_REPOSITORY) private readonly courts: ICourtRepository,
     @Inject(TRANSACTION_MANAGER) private readonly transactions: ITransactionManager,
     @Inject(SLOT_LOCK_MANAGER) private readonly slotLock: SlotLockManager,
+    private readonly quotePrice: QuotePriceUseCase,
   ) {}
 
   async execute(input: ConfirmBookingInput): Promise<BookingView> {
@@ -96,6 +99,11 @@ export class ConfirmBookingUseCase {
       );
     }
 
+    // Server tu tinh gia tai thoi diem confirm; khong tin gia client gui len.
+    const totalAmount =
+      input.expectedTotalAmount ??
+      (await this.quoteTotalAmount(court.courtId, minStartTime(slotSnapshot), maxEndTime(slotSnapshot)));
+
     const { bookingCode, qrCode } = await this.generateIdentifiers(now);
     const created = await this.transactions.runInTransaction(async (tx) => {
       // Buoc 2 muc 4.7.2: SELECT ... FOR UPDATE + xac minh van la nguoi giu cho.
@@ -110,7 +118,7 @@ export class ConfirmBookingUseCase {
         endTime: maxEndTime(heldSlots),
         slotIds: heldSlots.map((slot) => slot.slotId),
         note: input.note ?? null,
-        totalAmount: input.expectedTotalAmount ?? null,
+        totalAmount,
       });
       const persisted = await this.bookings.save(tx, booking);
       // Buoc 4: slot LOCKED -> BOOKED, gan booking_id.
@@ -123,6 +131,24 @@ export class ConfirmBookingUseCase {
 
     this.logIfUpcoming(created.persisted, now);
     return toBookingView(created.persisted, created.slotIds);
+  }
+
+  /** Server tu quote gia; chua co bang gia (INVALID_INPUT) thi null de POS quote sau. Khong tin client. */
+  private async quoteTotalAmount(courtId: number, startTime: Date, endTime: Date): Promise<number | null> {
+    try {
+      const quote = await this.quotePrice.execute({
+        courtId,
+        date: toDateString(startTime),
+        startTime: toClock(startTime),
+        endTime: toClock(endTime),
+      });
+      return quote.totalAmount;
+    } catch (error) {
+      if (error instanceof DomainError && error.code === DomainErrorCode.INVALID_INPUT) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /** trung uk_bookings_booking_code thi sinh lai; day la guard phang vi xac suat trung gan bang 0. */
@@ -162,6 +188,10 @@ function buildBookingCode(now: Date): string {
     random += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
   }
   return `${CODE_PREFIX}-${datePart}-${random}`;
+}
+
+function toClock(value: Date): string {
+  return `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`;
 }
 
 function minStartTime(slots: { startTime: Date }[]): Date {

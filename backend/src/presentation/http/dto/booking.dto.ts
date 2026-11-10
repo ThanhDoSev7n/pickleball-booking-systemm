@@ -5,7 +5,6 @@ import {
   IsArray,
   IsEnum,
   IsInt,
-  IsNumber,
   IsOptional,
   IsString,
   Matches,
@@ -37,11 +36,6 @@ export class ConfirmBookingDto {
   @IsString({ message: 'note phai la chuoi' })
   @MaxLength(255, { message: 'note toi da 255 ky tu' })
   note?: string | null;
-
-  @IsOptional()
-  @IsNumber({}, { message: 'expectedTotalAmount phai la so' })
-  @Min(0, { message: 'expectedTotalAmount khong the am' })
-  expectedTotalAmount?: number | null;
 }
 
 export class CancelBookingDto {

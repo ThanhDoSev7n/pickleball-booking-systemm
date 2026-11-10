@@ -24,6 +24,7 @@ import { AvailabilityController } from '../presentation/http/controllers/availab
 import { BookingController } from '../presentation/http/controllers/booking.controller';
 import { CourtModule } from './court.module';
 import { IdentityModule } from './identity.module';
+import { PricingModule } from './pricing.module';
 
 const DEFAULT_LOCK_TTL_MINUTES = 5;
 const DEFAULT_DEADLOCK_MAX_RETRIES = 3;
@@ -35,6 +36,7 @@ const DEADLOCK_BACKOFF_BASE_MS = 25;
     TypeOrmModule.forFeature([BookingSlotSchema, BookingSchema]),
     CourtModule,
     IdentityModule,
+    PricingModule,
     ConfigModule,
   ],
   providers: [

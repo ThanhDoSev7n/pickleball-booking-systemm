@@ -54,7 +54,7 @@ export interface BookingCartContextValue {
   lockSelection: () => Promise<LockOutcome>;
   releaseAll: () => Promise<void>;
   releaseOne: (slotId: number) => Promise<{ ok: boolean; error?: unknown }>;
-  confirm: (note?: string, expectedTotalAmount?: number | null) => Promise<ConfirmOutcome>;
+  confirm: (note?: string) => Promise<ConfirmOutcome>;
   dismissConfirmed: () => void;
 }
 
@@ -225,14 +225,13 @@ export function BookingCartProvider({ children }: { children: ReactNode }) {
   }, [held, clearHeld]);
 
   const confirm = useCallback(
-    async (note?: string, expectedTotalAmount?: number | null): Promise<ConfirmOutcome> => {
+    async (note?: string): Promise<ConfirmOutcome> => {
       if (!held.length) return { ok: false, error: new Error('EMPTY_HELD') };
       setConfirming(true);
       try {
         const booking = await apiConfirm({
           slotIds: held.map((item) => item.slotId),
           note: note?.trim() || undefined,
-          expectedTotalAmount: expectedTotalAmount ?? undefined,
         });
         clearHeld();
         setLastConfirmed(booking);
